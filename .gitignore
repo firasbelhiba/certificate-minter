@@ -4,3 +4,6 @@ node_modules
 .env
 data/*.json
 !data/.gitkeep
+
+# Private presentation notes (local only)
+SCRIPT-PRESENTATION-FR.md
