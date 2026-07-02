@@ -156,16 +156,21 @@ export default function Home() {
         {/* Register */}
         <div className="card">
           <h2>1 · Register</h2>
-          <div className="sub">Connect your wallet or paste your account ID.</div>
+          <div className="sub">
+            {wcReady
+              ? "Connect your wallet or paste your account ID."
+              : "Enter your name and Hedera account ID."}
+          </div>
 
-          <button
-            className="secondary"
-            onClick={onConnect}
-            disabled={busy === "connect" || !wcReady}
-            title={wcReady ? "" : "Wallet connect not configured — paste your account ID below"}
-          >
-            {busy === "connect" ? "Connecting…" : wallet ? `Connected · ${wallet.accountId}` : "Connect wallet (HashPack)"}
-          </button>
+          {wcReady && (
+            <button
+              className="secondary"
+              onClick={onConnect}
+              disabled={busy === "connect"}
+            >
+              {busy === "connect" ? "Connecting…" : wallet ? `Connected · ${wallet.accountId}` : "Connect wallet (HashPack)"}
+            </button>
+          )}
 
           <form onSubmit={onRegister}>
             <label>Full name (as it should appear on the certificate) *</label>
@@ -206,9 +211,25 @@ export default function Home() {
           )}
 
           {status && status.found && status.status === "minted" && (
-            <button onClick={onClaim} disabled={busy === "claim"}>
-              {busy === "claim" ? "Claiming…" : "Associate & Claim"}
-            </button>
+            <>
+              {!wcReady && (
+                <div className="token-badge" style={{ marginTop: 12 }}>
+                  Your certificate is ready! To receive it:
+                  <br />
+                  1. In your wallet (e.g. HashPack), <b>associate token{" "}
+                  <span className="mono">{status.tokenId}</span></b>.
+                  <br />
+                  2. Come back and click the button below.
+                </div>
+              )}
+              <button onClick={onClaim} disabled={busy === "claim"}>
+                {busy === "claim"
+                  ? "Claiming…"
+                  : wcReady
+                  ? "Associate & Claim"
+                  : "Claim my certificate"}
+              </button>
+            </>
           )}
           {status && status.found && status.status === "transferred" && (
             <div className="result ok" style={{ marginTop: 12 }}>
