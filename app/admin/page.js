@@ -14,6 +14,7 @@ export default function Admin() {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState(null);
+  const [progress, setProgress] = useState(null); // { total, done, log: [] }
 
   useEffect(() => {
     fetch("/api/config").then((r) => r.json()).then(setConfig).catch(() => {});
@@ -59,12 +60,15 @@ export default function Admin() {
       return;
     }
     setBusy("mint");
+    setMsg(null);
+    const total = c?.registered ?? 0;
+    const log = [];
+    setProgress({ total, done: 0, log });
     let totalMinted = 0;
     let totalFailed = 0;
     try {
       // Loop batches until nothing is left to mint.
-      for (let i = 0; i < 200; i++) {
-        setMsg({ type: "info", text: `Minting on Hedera… ${totalMinted} done so far.` });
+      for (let i = 0; i < 500; i++) {
         const res = await fetch("/api/admin/mint-all", {
           method: "POST",
           headers: authHeaders(),
@@ -74,11 +78,37 @@ export default function Admin() {
         if (!res.ok) throw new Error(d.error || "Mint failed");
         totalMinted += d.minted;
         totalFailed += d.failed;
+        for (const r of d.results || []) log.push(r);
+        setProgress({ total, done: totalMinted + totalFailed, log: [...log] });
         loadStudents();
-        if (!d.remaining && !d.minted) break;
         if (!d.remaining) break;
       }
       setMsg({ type: "ok", text: `Done. Minted ${totalMinted}${totalFailed ? `, ${totalFailed} failed` : ""}.` });
+      loadStudents();
+    } catch (e) {
+      setMsg({ type: "err", text: e.message });
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function resetDb() {
+    if (
+      !window.confirm(
+        "Clear ALL students and certificate records? This starts the app from scratch. (On-chain NFTs already sent are unaffected.)"
+      )
+    )
+      return;
+    setBusy("reset");
+    setMsg(null);
+    setProgress(null);
+    try {
+      const res = await fetch("/api/admin/reset", {
+        method: "POST",
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error("Reset failed");
+      setMsg({ type: "ok", text: "Database cleared. Ready for a fresh class." });
       loadStudents();
     } catch (e) {
       setMsg({ type: "err", text: e.message });
@@ -180,7 +210,35 @@ export default function Admin() {
       {c && (
         <div className="token-badge" style={{ marginBottom: 14 }}>
           <b>{c.total}</b> total · <b>{c.registered}</b> registered · <b>{c.minted}</b> minted · <b>{c.transferred}</b> received
-          <button className="secondary" style={{ marginTop: 10 }} onClick={() => loadStudents()}>Refresh</button>
+          <div className="grid" style={{ marginTop: 10 }}>
+            <button className="secondary" onClick={() => loadStudents()}>Refresh</button>
+            <button className="danger" onClick={resetDb} disabled={busy === "reset"}>
+              {busy === "reset" ? "Clearing…" : "🗑 Clear all students"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {progress && (
+        <div className="card" style={{ marginBottom: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 8 }}>
+            <span>{busy === "mint" ? "Minting certificates…" : "Minting complete"}</span>
+            <b>{progress.done}/{progress.total}</b>
+          </div>
+          <div className="bar">
+            <div
+              className="bar-fill"
+              style={{ width: `${progress.total ? Math.round((progress.done / progress.total) * 100) : 0}%` }}
+            />
+          </div>
+          <div className="mint-log">
+            {progress.log.slice().reverse().map((r, i) => (
+              <div key={i} className="mint-log-row">
+                <span>{r.ok ? "✅" : "❌"} {r.name}</span>
+                <span className="mono">{r.ok ? `#${r.serial}` : (r.error || "failed").slice(0, 30)}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
