@@ -75,27 +75,27 @@ Every certificate is a personalized SVG diploma (student name, course, issuer, d
 ## 4. The full workflow — step by step, in order
 
 ### One-time setup (already done)
-0. **Create the collection**: `POST /api/create-token` → `TokenCreateTransaction` creates the NFT token `0.0.9394237` (treasury = instructor). Its ID goes into `HEDERA_TOKEN_ID`.
+0. **Create the collection**: [`POST /api/create-token`](app/api/create-token/route.js) → `TokenCreateTransaction` creates the NFT token `0.0.9394237` (treasury = instructor). Its ID goes into `HEDERA_TOKEN_ID`.
 
 ### Live flow
-1. **Student registers** → `app/page.js` calls `POST /api/register`
-   → validates the account ID → saves `{ name, accountId, status: "registered" }` in the DB (`lib/db.js`).
+1. **Student registers** → [`app/page.js`](app/page.js) calls [`POST /api/register`](app/api/register/route.js)
+   → validates the account ID → saves `{ name, accountId, status: "registered" }` in the DB ([`lib/db.js`](lib/db.js)).
 
-2. **Instructor mints** → `app/admin/page.js` clicks *Mint all* → calls `POST /api/admin/mint-all` in a loop (5 students per call):
-   - For each student → `lib/mint.js` `mintCertificate()`:
-     1. render the SVG diploma (`lib/certificate.js`)
-     2. pin image + metadata to IPFS (`lib/ipfs.js`) **or** save metadata in the DB
+2. **Instructor mints** → [`app/admin/page.js`](app/admin/page.js) clicks *Mint all* → calls [`POST /api/admin/mint-all`](app/api/admin/mint-all/route.js) in a loop (5 students per call):
+   - For each student → [`lib/mint.js`](lib/mint.js) `mintCertificate()`:
+     1. render the SVG diploma ([`lib/certificate.js`](lib/certificate.js))
+     2. pin image + metadata to IPFS ([`lib/ipfs.js`](lib/ipfs.js)) **or** save metadata in the DB
      3. `TokenMintTransaction` → creates a new **serial** in the collection (owned by the **treasury**)
    - The student's status becomes `"minted"` and their `serial` is saved.
    - The progress bar fills as each batch returns.
 
 3. **Student associates the token** → in their wallet (HashPack → *Associate token* `0.0.9394237`), or via WalletConnect in-app. This is the mandatory Hedera step.
 
-4. **Student claims** → `app/page.js` clicks *Claim* → `POST /api/claim`:
-   - checks association via the mirror node (`lib/hedera.js` `isAssociated`)
+4. **Student claims** → [`app/page.js`](app/page.js) clicks *Claim* → [`POST /api/claim`](app/api/claim/route.js):
+   - checks association via the mirror node ([`lib/hedera.js`](lib/hedera.js) `isAssociated`)
    - if associated → `TransferTransaction` moves the NFT **treasury → student**
    - status becomes `"transferred"`.
-   *(Alternatively the instructor can push to everyone associated via `POST /api/admin/distribute`.)*
+   *(Alternatively the instructor can push to everyone associated via [`POST /api/admin/distribute`](app/api/admin/distribute/route.js).)*
 
 5. **Verify** → the NFT is now in the student's wallet and publicly visible on **HashScan**. Its image/metadata resolve from IPFS or the app.
 
@@ -145,14 +145,44 @@ hedera-certificates/
 └─ SCRIPT-PRESENTATION-FR.md        French teaching script (git-ignored, private)
 ```
 
-### The `lib/` files in detail
-- **`hedera.js`** — `getClient()` builds the Hedera client from the operator credentials; `parseKey()` accepts any key format; `getOperatorKey()` returns the signing key; `isAssociated()` asks the mirror node if an account associated the token; `getBaseUrl()` finds the app's public URL; `getHashScanBase()`/`getMirrorNodeBase()` return the right URLs per network.
-- **`mint.js`** — `mintCertificate()` renders the SVG, stores metadata (IPFS or DB), runs `TokenMintTransaction`, and returns the new serial. **This is the heart of the app.**
-- **`db.js`** — a tiny data layer with two backends (Upstash Redis in prod, `data/db.json` locally). Functions: `upsertStudent`, `getStudent`, `listStudents`, `patchStudent`, `saveCert`, `getCert`, `clearAll`, `storageMode`.
-- **`ipfs.js`** — `pinFile()` / `pinJSON()` upload to Pinata and return a CID; `gatewayUrl()` builds a viewable link; `ipfsEnabled()` toggles the whole IPFS path.
-- **`certificate.js`** — `renderCertificateSVG()` draws the diploma (borders, seal, name, course, footer).
-- **`auth.js`** — `checkAdmin()` compares the `x-admin-password` header to `ADMIN_PASSWORD` (constant-time).
-- **`wallet.js`** — optional HashPack connection + token association signing (only active if a WalletConnect project id is set).
+### 📂 Clickable file index (click to open each file)
+
+**Frontend**
+- [app/layout.js](app/layout.js) — root layout
+- [app/globals.css](app/globals.css) — styles
+- [app/page.js](app/page.js) — **student page** (register + claim)
+- [app/admin/page.js](app/admin/page.js) — **instructor dashboard**
+
+**API routes** (`app/api/`)
+- [config/route.js](app/api/config/route.js) — public config for the UI
+- [register/route.js](app/api/register/route.js) — register a student
+- [students/route.js](app/api/students/route.js) — public count + names
+- [status/route.js](app/api/status/route.js) — a student's status
+- [claim/route.js](app/api/claim/route.js) — **verify association → transfer NFT**
+- [create-token/route.js](app/api/create-token/route.js) — create the collection
+- [metadata/[id]/route.js](app/api/metadata/%5Bid%5D/route.js) — serve HIP-412 JSON
+- [certificate/[id]/route.js](app/api/certificate/%5Bid%5D/route.js) — serve the diploma image
+- [certificate/preview/route.js](app/api/certificate/preview/route.js) — live preview
+- [admin/verify/route.js](app/api/admin/verify/route.js) — admin login
+- [admin/students/route.js](app/api/admin/students/route.js) — full list + counts
+- [admin/mint-all/route.js](app/api/admin/mint-all/route.js) — **batch mint**
+- [admin/distribute/route.js](app/api/admin/distribute/route.js) — send to associated
+- [admin/reset/route.js](app/api/admin/reset/route.js) — clear the database
+
+**Logic** (`lib/`)
+- [lib/hedera.js](lib/hedera.js) · [lib/mint.js](lib/mint.js) · [lib/db.js](lib/db.js) · [lib/ipfs.js](lib/ipfs.js) · [lib/certificate.js](lib/certificate.js) · [lib/auth.js](lib/auth.js) · [lib/wallet.js](lib/wallet.js)
+
+**Other**
+- [scripts/make-test-account.mjs](scripts/make-test-account.mjs) · [.env.example](.env.example)
+
+### The `lib/` files in detail (click the name to open)
+- **[hedera.js](lib/hedera.js)** — `getClient()` builds the Hedera client from the operator credentials; `parseKey()` accepts any key format; `getOperatorKey()` returns the signing key; `isAssociated()` asks the mirror node if an account associated the token; `getBaseUrl()` finds the app's public URL; `getHashScanBase()`/`getMirrorNodeBase()` return the right URLs per network.
+- **[mint.js](lib/mint.js)** — `mintCertificate()` renders the SVG, stores metadata (IPFS or DB), runs `TokenMintTransaction`, and returns the new serial. **This is the heart of the app.**
+- **[db.js](lib/db.js)** — a tiny data layer with two backends (Upstash Redis in prod, `data/db.json` locally). Functions: `upsertStudent`, `getStudent`, `listStudents`, `patchStudent`, `saveCert`, `getCert`, `clearAll`, `storageMode`.
+- **[ipfs.js](lib/ipfs.js)** — `pinFile()` / `pinJSON()` upload to Pinata and return a CID; `gatewayUrl()` builds a viewable link; `ipfsEnabled()` toggles the whole IPFS path.
+- **[certificate.js](lib/certificate.js)** — `renderCertificateSVG()` draws the diploma (borders, seal, name, course, footer).
+- **[auth.js](lib/auth.js)** — `checkAdmin()` compares the `x-admin-password` header to `ADMIN_PASSWORD` (constant-time).
+- **[wallet.js](lib/wallet.js)** — optional HashPack connection + token association signing (only active if a WalletConnect project id is set).
 
 ---
 
