@@ -1,0 +1,245 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0a0e1a;
+  --card: #131a2c;
+  --border: #263048;
+  --text: #e6ebf5;
+  --muted: #8a95ad;
+  --accent: #7c5cff;
+  --accent2: #00c2ff;
+  --ok: #2ecc71;
+  --err: #ff5c6c;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: radial-gradient(1200px 600px at 20% -10%, #1b2440 0%, var(--bg) 55%);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 32px 16px;
+}
+
+.wrap {
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.header h1 {
+  font-size: 28px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.header p {
+  color: var(--muted);
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+@media (max-width: 720px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.card h2 {
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.card .sub {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin: 12px 0 6px;
+}
+
+input {
+  width: 100%;
+  background: #0e1424;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+button {
+  width: 100%;
+  margin-top: 18px;
+  padding: 12px;
+  border: none;
+  border-radius: 9px;
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  transition: opacity 0.15s;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.token-badge {
+  margin-top: 14px;
+  font-size: 13px;
+  background: #0e1424;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  word-break: break-all;
+}
+
+.token-badge b {
+  color: var(--accent2);
+}
+
+.result {
+  margin-top: 18px;
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 14px;
+}
+
+.result.ok {
+  background: rgba(46, 204, 113, 0.08);
+  border: 1px solid rgba(46, 204, 113, 0.4);
+}
+
+.result.err {
+  background: rgba(255, 92, 108, 0.08);
+  border: 1px solid rgba(255, 92, 108, 0.4);
+  color: var(--err);
+}
+
+.result a {
+  color: var(--accent2);
+  word-break: break-all;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.row span:first-child {
+  color: var(--muted);
+}
+
+.cert-img {
+  width: 100%;
+  display: block;
+  margin-top: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin-top: 6px;
+}
+
+.tbl th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 12px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tbl td {
+  padding: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.tbl a {
+  color: var(--accent2);
+}
+
+.mono {
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.pill {
+  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  text-transform: capitalize;
+}
+
+.pill.registered {
+  color: #ffcf6b;
+  border-color: rgba(255, 207, 107, 0.4);
+}
+
+.pill.minted {
+  color: var(--accent2);
+  border-color: rgba(0, 194, 255, 0.4);
+}
+
+.pill.transferred {
+  color: var(--ok);
+  border-color: rgba(46, 204, 113, 0.4);
+}
+
+.foot {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 26px;
+}
